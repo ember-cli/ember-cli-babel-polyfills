@@ -23,22 +23,20 @@ module.exports = {
   included() {
     this._super.included.apply(this, arguments);
 
-    let parentOptions = (this.parent.options || {})['ember-cli-babel-polyfills'];
-    let appOptions = (this.app.options || {})['ember-cli-babel-polyfills'];
-
-    this.options = Object.assign({}, DEFAULT_OPTIONS, parentOptions, appOptions);
+    let parentOptions = (this.app || this.parent).options || {};
+    this.options = Object.assign({}, DEFAULT_OPTIONS, parentOptions['ember-cli-babel-polyfills']);
 
     this._isBabel7 = new VersionChecker(this.project).for('ember-cli-babel').gte('7.0.0');
 
-    this.app.import('vendor/ember-cli-babel-polyfills/shared.js', {
+    this.import('vendor/ember-cli-babel-polyfills/shared.js', {
       outputFile: 'assets/polyfill-shared.js'
     });
 
-    this.app.import('vendor/ember-cli-babel-polyfills/legacy.js', {
+    this.import('vendor/ember-cli-babel-polyfills/legacy.js', {
       outputFile: 'assets/polyfill-legacy.js'
     });
 
-    this.app.import('vendor/ember-cli-babel-polyfills/evergreen.js', {
+    this.import('vendor/ember-cli-babel-polyfills/evergreen.js', {
       outputFile: 'assets/polyfill-evergreen.js'
     });
   },
