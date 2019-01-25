@@ -23,8 +23,13 @@ module.exports = {
   included() {
     this._super.included.apply(this, arguments);
 
-    let parentOptions = (this.app || this.parent).options || {};
-    this.options = Object.assign({}, DEFAULT_OPTIONS, parentOptions['ember-cli-babel-polyfills']);
+    let parent = this.parent;
+    let host = this._findHost();
+
+    let parentOptions = (parent.options || {})['ember-cli-babel-polyfills'];
+    let hostOptions = (host.options || {})['ember-cli-babel-polyfills'];
+
+    this._options = Object.assign({}, DEFAULT_OPTIONS, parentOptions, hostOptions);
 
     this._isBabel7 = new VersionChecker(this.project).for('ember-cli-babel').gte('7.0.0');
 
@@ -49,8 +54,8 @@ module.exports = {
     let writeFile = require('broccoli-file-creator');
     let TransformAmd = require('./lib/transform-amd');
 
-    let legacyTargets = this.options.legacyTargets || this.project.targets;
-    let evergreenTargets = this.options.evergreenTargets
+    let legacyTargets = this._options.legacyTargets || this.project.targets;
+    let evergreenTargets = this._options.evergreenTargets
 
     let entries = new MergeTrees([
       writeFile('legacy.js', this._getEntryForTargets(legacyTargets)),
@@ -110,7 +115,7 @@ module.exports = {
   },
 
   contentFor(type, { rootURL }) {
-    if (this.options.includeScriptTags && type === 'body') {
+    if (this._options.includeScriptTags && type === 'body') {
       return `
         <script src="${rootURL}assets/polyfill-shared.js"></script>
         <script src="${rootURL}assets/polyfill-legacy.js" nomodule></script>
