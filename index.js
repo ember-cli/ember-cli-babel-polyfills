@@ -23,8 +23,10 @@ module.exports = {
   included() {
     this._super.included.apply(this, arguments);
 
+    let parentOptions = (this.parent.options || {})['ember-cli-babel-polyfills'];
     let appOptions = (this.app.options || {})['ember-cli-babel-polyfills'];
-    this.options = Object.assign({}, DEFAULT_OPTIONS, appOptions);
+
+    this.options = Object.assign({}, DEFAULT_OPTIONS, parentOptions, appOptions);
 
     this._isBabel7 = new VersionChecker(this.project).for('ember-cli-babel').gte('7.0.0');
 
