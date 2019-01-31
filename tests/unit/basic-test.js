@@ -1,6 +1,12 @@
 import { module, test } from 'qunit';
 
-import { isIE, isEdge, isChrome, isFirefox, isSafari } from '../helpers/browser-detection';
+import {
+  isIE,
+  isEdge,
+  isChrome,
+  isFirefox,
+  isSafari,
+} from '../helpers/browser-detection';
 
 module('polyfill', function() {
   if (isIE) {
@@ -9,10 +15,10 @@ module('polyfill', function() {
         // we will load all modules in legacy, but the evergreen module is
         // mostly/fully empty
         assert.ok(
-          window.BABEL_POLYFILL_MODULES !== undefined
-          && window.BABEL_POLYFILL_MODULES['shared.js'] !== undefined
-          && window.BABEL_POLYFILL_MODULES['legacy.js'] !== undefined
-          && window.BABEL_POLYFILL_MODULES['evergreen.js'] !== undefined,
+          window.BABEL_POLYFILL_MODULES !== undefined &&
+            window.BABEL_POLYFILL_MODULES['shared.js'] !== undefined &&
+            window.BABEL_POLYFILL_MODULES['legacy.js'] !== undefined &&
+            window.BABEL_POLYFILL_MODULES['evergreen.js'] !== undefined,
           'polyfill was loaded'
         );
       });
@@ -23,19 +29,39 @@ module('polyfill', function() {
     });
   } else {
     module('evergreen', function() {
-      test('it loads', function(assert) {
-        assert.ok(
-          window.BABEL_POLYFILL_MODULES !== undefined
-          && window.BABEL_POLYFILL_MODULES['shared.js'] !== undefined
-          && window.BABEL_POLYFILL_MODULES['evergreen.js'] !== undefined,
-          'polyfill was loaded'
-        );
+      let HAS_LEGACY_SCRIPT = !Array.from(
+        document.querySelectorAll('script')
+      ).find(
+        script => script.attributes.src.value === '/assets/polyfill-legacy.js'
+      ).attributes.nomodule;
 
-        assert.ok(
-          window.BABEL_POLYFILL_MODULES['legacy.js'] === undefined,
-          'legacy polyfill was not loaded'
-        );
-      });
+      if (HAS_LEGACY_SCRIPT) {
+        test('it loads', function(assert) {
+          // we will load all modules in legacy, but the evergreen module is
+          // mostly/fully empty
+          assert.ok(
+            window.BABEL_POLYFILL_MODULES !== undefined &&
+              window.BABEL_POLYFILL_MODULES['shared.js'] !== undefined &&
+              window.BABEL_POLYFILL_MODULES['legacy.js'] !== undefined &&
+              window.BABEL_POLYFILL_MODULES['evergreen.js'] !== undefined,
+            'polyfill was loaded'
+          );
+        });
+      } else {
+        test('it loads', function(assert) {
+          assert.ok(
+            window.BABEL_POLYFILL_MODULES !== undefined &&
+              window.BABEL_POLYFILL_MODULES['shared.js'] !== undefined &&
+              window.BABEL_POLYFILL_MODULES['evergreen.js'] !== undefined,
+            'polyfill was loaded'
+          );
+
+          assert.ok(
+            window.BABEL_POLYFILL_MODULES['legacy.js'] === undefined,
+            'legacy polyfill was not loaded'
+          );
+        });
+      }
 
       if (isChrome || isFirefox || isSafari) {
         test('it works', function(assert) {
@@ -45,7 +71,10 @@ module('polyfill', function() {
           // polyfill in other browsers despite being non-standard. We should add a lint
           // rule preventing people from using, but seems like a good signal the the
           // polyfill was included correctly for now.
-          assert.ok(typeof window.setImmediate === 'function', 'setImmediate exists');
+          assert.ok(
+            typeof window.setImmediate === 'function',
+            'setImmediate exists'
+          );
         });
       }
 
@@ -53,9 +82,12 @@ module('polyfill', function() {
         test('it works', function(assert) {
           // This test will eventually stop working once dom iterable is
           // available in Edge.
-          assert.ok(document.forms[Symbol.iterator], 'DOM Iterables are iterable');
+          assert.ok(
+            document.forms[Symbol.iterator],
+            'DOM Iterables are iterable'
+          );
         });
       }
     });
   }
-})
+});

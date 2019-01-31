@@ -29,20 +29,27 @@ module.exports = {
     let parentOptions = (parent.options || {})['ember-cli-babel-polyfills'];
     let hostOptions = (host.options || {})['ember-cli-babel-polyfills'];
 
-    this._options = Object.assign({}, DEFAULT_OPTIONS, parentOptions, hostOptions);
+    this._options = Object.assign(
+      {},
+      DEFAULT_OPTIONS,
+      parentOptions,
+      hostOptions
+    );
 
-    this._isBabel7 = new VersionChecker(this.project).for('ember-cli-babel').gte('7.0.0');
+    this._isBabel7 = new VersionChecker(this.project)
+      .for('ember-cli-babel')
+      .gte('7.0.0');
 
     this.import('vendor/ember-cli-babel-polyfills/shared.js', {
-      outputFile: 'assets/polyfill-shared.js'
+      outputFile: 'assets/polyfill-shared.js',
     });
 
     this.import('vendor/ember-cli-babel-polyfills/legacy.js', {
-      outputFile: 'assets/polyfill-legacy.js'
+      outputFile: 'assets/polyfill-legacy.js',
     });
 
     this.import('vendor/ember-cli-babel-polyfills/evergreen.js', {
-      outputFile: 'assets/polyfill-evergreen.js'
+      outputFile: 'assets/polyfill-evergreen.js',
     });
   },
 
@@ -55,7 +62,7 @@ module.exports = {
     let TransformAmd = require('./lib/transform-amd');
 
     let legacyTargets = this._options.legacyTargets || this.project.targets;
-    let evergreenTargets = this._options.evergreenTargets
+    let evergreenTargets = this._options.evergreenTargets;
 
     let entries = new MergeTrees([
       writeFile('legacy.js', this._getEntryForTargets(legacyTargets)),
@@ -70,10 +77,7 @@ module.exports = {
           dir: 'output',
           format: 'amd',
         },
-        plugins: [
-          resolve(),
-          commonjs(),
-        ],
+        plugins: [resolve(), commonjs()],
       },
     });
 
@@ -81,23 +85,27 @@ module.exports = {
       srcDir: 'output',
       destDir: 'ember-cli-babel-polyfills',
       getDestinationPath(path) {
-        return (path !== 'legacy.js' && path !== 'evergreen.js') ? 'shared.js' : path;
+        return path !== 'legacy.js' && path !== 'evergreen.js'
+          ? 'shared.js'
+          : path;
       },
     });
   },
 
   _getEntryForTargets(targets) {
     let babel = require(this._isBabel7 ? '@babel/core' : 'babel-core');
-    let presetEnvPath = require.resolve(this._isBabel7 ? '@babel/preset-env' : 'babel-preset-env');
+    let presetEnvPath = require.resolve(
+      this._isBabel7 ? '@babel/preset-env' : 'babel-preset-env'
+    );
 
-    return babel.transform(
-      'import "@babel/polyfill";',
-      {
-        presets: [
-          [presetEnvPath, { targets: this._getTargets(targets), useBuiltIns: 'entry' }],
+    return babel.transform('import "@babel/polyfill";', {
+      presets: [
+        [
+          presetEnvPath,
+          { targets: this._getTargets(targets), useBuiltIns: 'entry' },
         ],
-      }
-    ).code;
+      ],
+    }).code;
   },
 
   _getTargets(targets) {
@@ -115,10 +123,12 @@ module.exports = {
   },
 
   contentFor(type, { rootURL }) {
+    let forceInclude = process.env.TEST_FORCE_INCLUDE_LEGACY_SCRIPT
+
     if (this._options.includeScriptTags && type === 'body') {
       return `
         <script src="${rootURL}assets/polyfill-shared.js"></script>
-        <script src="${rootURL}assets/polyfill-legacy.js" nomodule></script>
+        <script src="${rootURL}assets/polyfill-legacy.js" ${forceInclude ? '' : 'nomodule'}></script>
         <script src="${rootURL}assets/polyfill-evergreen.js"></script>
       `;
     }
