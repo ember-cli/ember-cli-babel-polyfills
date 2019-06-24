@@ -70,7 +70,7 @@ module.exports = {
       writeFile('evergreen.js', this._getEntryForTargets(evergreenTargets)),
     ]);
 
-    let basedir = path.dirname(require.resolve('@babel/polyfill', {
+    let basedir = path.dirname(require('resolve').sync('@babel/polyfill', {
       basedir: this.project.findAddonByName('ember-cli-babel').root
     }));
 
@@ -88,7 +88,6 @@ module.exports = {
               basedir
             }
           }),
-          ,
           commonjs()
         ],
       }
