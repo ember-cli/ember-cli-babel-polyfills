@@ -3,6 +3,7 @@
 const VersionChecker = require('ember-cli-version-checker');
 const MergeTrees = require('broccoli-merge-trees');
 const Funnel = require('broccoli-funnel');
+const path = require('path');
 
 const DEFAULT_OPTIONS = {
   includeScriptTags: true,
@@ -69,6 +70,10 @@ module.exports = {
       writeFile('evergreen.js', this._getEntryForTargets(evergreenTargets)),
     ]);
 
+    let basedir = path.dirname(require.resolve('@babel/polyfill', {
+      basedir: this.project.findAddonByName('ember-cli-babel').root
+    }));
+
     let rolledUp = new Rollup(entries, {
       rollup: {
         experimentalCodeSplitting: true,
@@ -77,8 +82,16 @@ module.exports = {
           dir: 'output',
           format: 'amd',
         },
-        plugins: [resolve(), commonjs()],
-      },
+        plugins: [
+          resolve({
+            customResolveOptions: {
+              basedir
+            }
+          }),
+          ,
+          commonjs()
+        ],
+      }
     });
 
     return new Funnel(new TransformAmd(rolledUp), {
