@@ -4,6 +4,7 @@ const VersionChecker = require('ember-cli-version-checker');
 const MergeTrees = require('broccoli-merge-trees');
 const Funnel = require('broccoli-funnel');
 const path = require('path');
+const fs = require('fs');
 
 const DEFAULT_OPTIONS = {
   includeScriptTags: true,
@@ -65,14 +66,18 @@ module.exports = {
     let legacyTargets = this._options.legacyTargets || this.project.targets;
     let evergreenTargets = this._options.evergreenTargets;
 
-    let entries = new MergeTrees([
-      writeFile('legacy.js', this._getEntryForTargets(legacyTargets)),
-      writeFile('evergreen.js', this._getEntryForTargets(evergreenTargets)),
-    ]);
-
     let basedir = path.dirname(require('resolve').sync('@babel/polyfill', {
       basedir: this.project.findAddonByName('ember-cli-babel').root
     }));
+
+    let corejsVersion = JSON.parse(fs.readFileSync(require('resolve').sync('core-js/package.json', {
+      basedir
+    }))).version.split('.')[0];
+
+    let entries = new MergeTrees([
+      writeFile('legacy.js', this._getEntryForTargets(legacyTargets, corejsVersion)),
+      writeFile('evergreen.js', this._getEntryForTargets(evergreenTargets, corejsVersion)),
+    ]);
 
     let rolledUp = new Rollup(entries, {
       rollup: {
@@ -104,7 +109,7 @@ module.exports = {
     });
   },
 
-  _getEntryForTargets(targets) {
+  _getEntryForTargets(targets, corejs) {
     let babel = require(this._isBabel7 ? '@babel/core' : 'babel-core');
     let presetEnvPath = require.resolve(
       this._isBabel7 ? '@babel/preset-env' : 'babel-preset-env'
@@ -114,7 +119,11 @@ module.exports = {
       presets: [
         [
           presetEnvPath,
-          { targets: this._getTargets(targets), useBuiltIns: 'entry' },
+          {
+            targets: this._getTargets(targets),
+            useBuiltIns: 'entry',
+            corejs
+          },
         ],
       ],
     }).code;
