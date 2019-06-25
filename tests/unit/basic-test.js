@@ -29,9 +29,7 @@ module('polyfill', function() {
     });
   } else {
     module('evergreen', function() {
-      let HAS_LEGACY_SCRIPT = !Array.from(
-        document.querySelectorAll('script')
-      ).find(
+      let HAS_LEGACY_SCRIPT = !Array.from(document.scripts).find(
         script => script.attributes.src.value === '/assets/polyfill-legacy.js'
       ).attributes.nomodule;
 
