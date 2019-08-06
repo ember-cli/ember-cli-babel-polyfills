@@ -3,7 +3,6 @@
 const VersionChecker = require('ember-cli-version-checker');
 const MergeTrees = require('broccoli-merge-trees');
 const Funnel = require('broccoli-funnel');
-const path = require('path');
 const fs = require('fs');
 
 const DEFAULT_OPTIONS = {
@@ -66,9 +65,7 @@ module.exports = {
     let legacyTargets = this._options.legacyTargets || this.project.targets;
     let evergreenTargets = this._options.evergreenTargets;
 
-    let basedir = path.dirname(require('resolve').sync('@babel/polyfill', {
-      basedir: this.project.findAddonByName('ember-cli-babel').root
-    }));
+    let basedir = this.project.root;
 
     let corejsVersion = JSON.parse(fs.readFileSync(require('resolve').sync('core-js/package.json', {
       basedir
@@ -115,7 +112,7 @@ module.exports = {
       this._isBabel7 ? '@babel/preset-env' : 'babel-preset-env'
     );
 
-    return babel.transform('import "@babel/polyfill";', {
+    return babel.transform('import "core-js/stable";import "regenerator-runtime/runtime";', {
       presets: [
         [
           presetEnvPath,
