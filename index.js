@@ -3,7 +3,6 @@
 const VersionChecker = require('ember-cli-version-checker');
 const MergeTrees = require('broccoli-merge-trees');
 const Funnel = require('broccoli-funnel');
-const path = require('path');
 const fs = require('fs');
 
 const DEFAULT_OPTIONS = {
@@ -38,9 +37,13 @@ module.exports = {
       hostOptions
     );
 
-    this._isBabel7 = new VersionChecker(this.project)
-      .for('ember-cli-babel')
-      .gte('7.0.0');
+    let checker = new VersionChecker(this.project);
+
+    if (!checker.for('ember-cli-babel').gte('7.0.0')) {
+      throw new Error(
+        'ember-cli-babel-polyfill only supports Babel 7+, attempted to use it with an earlier version'
+      );
+    }
 
     this.import('vendor/ember-cli-babel-polyfills/shared.js', {
       outputFile: 'assets/polyfill-shared.js',
@@ -66,17 +69,25 @@ module.exports = {
     let legacyTargets = this._options.legacyTargets || this.project.targets;
     let evergreenTargets = this._options.evergreenTargets;
 
-    let basedir = path.dirname(require('resolve').sync('@babel/polyfill', {
-      basedir: this.project.findAddonByName('ember-cli-babel').root
-    }));
+    let basedir = this.project.root;
 
-    let corejsVersion = JSON.parse(fs.readFileSync(require('resolve').sync('core-js/package.json', {
-      basedir
-    }))).version.split('.')[0];
+    let corejsVersion = JSON.parse(
+      fs.readFileSync(
+        require('resolve').sync('core-js/package.json', {
+          basedir,
+        })
+      )
+    ).version.split('.')[0];
 
     let entries = new MergeTrees([
-      writeFile('legacy.js', this._getEntryForTargets(legacyTargets, corejsVersion)),
-      writeFile('evergreen.js', this._getEntryForTargets(evergreenTargets, corejsVersion)),
+      writeFile(
+        'legacy.js',
+        this._getEntryForTargets(legacyTargets, corejsVersion)
+      ),
+      writeFile(
+        'evergreen.js',
+        this._getEntryForTargets(evergreenTargets, corejsVersion)
+      ),
     ]);
 
     let rolledUp = new Rollup(entries, {
@@ -90,12 +101,12 @@ module.exports = {
         plugins: [
           resolve({
             customResolveOptions: {
-              basedir
-            }
+              basedir,
+            },
           }),
-          commonjs()
+          commonjs(),
         ],
-      }
+      },
     });
 
     return new Funnel(new TransformAmd(rolledUp), {
@@ -110,46 +121,36 @@ module.exports = {
   },
 
   _getEntryForTargets(targets, corejs) {
-    let babel = require(this._isBabel7 ? '@babel/core' : 'babel-core');
-    let presetEnvPath = require.resolve(
-      this._isBabel7 ? '@babel/preset-env' : 'babel-preset-env'
-    );
-
-    return babel.transform('import "@babel/polyfill";', {
-      presets: [
-        [
-          presetEnvPath,
-          {
-            targets: this._getTargets(targets),
-            useBuiltIns: 'entry',
-            corejs
-          },
-        ],
-      ],
-    }).code;
-  },
-
-  _getTargets(targets) {
-    if (this._isBabel7) {
-      return targets;
-    }
-
     // eslint-disable-next-line node/no-extraneous-require
-    let parser = require('babel-preset-env/lib/targets-parser').default;
-    if (typeof targets === 'object' && targets !== null) {
-      return parser(targets);
-    } else {
-      return targets;
-    }
+    let babel = require('@babel/core');
+    let presetEnvPath = require.resolve('@babel/preset-env');
+
+    return babel.transform(
+      'import "core-js/stable";import "regenerator-runtime/runtime";',
+      {
+        presets: [
+          [
+            presetEnvPath,
+            {
+              targets,
+              useBuiltIns: 'entry',
+              corejs,
+            },
+          ],
+        ],
+      }
+    ).code;
   },
 
   contentFor(type, { rootURL }) {
-    let forceInclude = process.env.TEST_FORCE_INCLUDE_LEGACY_SCRIPT
+    let forceInclude = process.env.TEST_FORCE_INCLUDE_LEGACY_SCRIPT;
 
     if (this._options.includeScriptTags && type === 'body') {
       return `
         <script src="${rootURL}assets/polyfill-shared.js"></script>
-        <script src="${rootURL}assets/polyfill-legacy.js" ${forceInclude ? '' : 'nomodule'}></script>
+        <script src="${rootURL}assets/polyfill-legacy.js" ${
+        forceInclude ? '' : 'nomodule'
+      }></script>
         <script src="${rootURL}assets/polyfill-evergreen.js"></script>
       `;
     }
