@@ -69,14 +69,8 @@ module.exports = {
     let legacyTargets = this._options.legacyTargets || this.project.targets;
     let evergreenTargets = this._options.evergreenTargets;
 
-    let basedir = this.project.root;
-
     let corejsVersion = JSON.parse(
-      fs.readFileSync(
-        require('resolve').sync('core-js/package.json', {
-          basedir,
-        })
-      )
+      fs.readFileSync(require('resolve').sync('core-js/package.json'))
     ).version.split('.')[0];
 
     let entries = new MergeTrees([
@@ -101,7 +95,7 @@ module.exports = {
         plugins: [
           resolve({
             customResolveOptions: {
-              basedir,
+              basedir: this.root,
             },
           }),
           commonjs(),
